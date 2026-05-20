@@ -1,0 +1,7 @@
+backend/.venv/
+backend/__pycache__/
+backend/*.pyc
+lung-nodule-frontend/node_modules/
+lung-nodule-frontend/dist/
+.env
+.DS_Store

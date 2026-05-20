@@ -1,0 +1,17 @@
+{
+  "name": "lung-nodule-frontend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite"
+  },
+  "dependencies": {
+    "react": "latest",
+    "react-dom": "latest",
+    "react-image-crop": "^11.0.10"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest"
+  }
+}

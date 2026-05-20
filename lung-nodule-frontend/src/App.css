@@ -1,0 +1,79 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f4f7f9;
+}
+
+.app {
+  max-width: 900px;
+  margin: 50px auto;
+  padding: 30px;
+}
+
+h1 {
+  color: #1f2937;
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  color: #4b5563;
+  margin-bottom: 30px;
+}
+
+.upload-card,
+.result-card {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  margin-bottom: 25px;
+}
+
+input {
+  display: block;
+  margin: 20px 0;
+}
+
+button {
+  background: #1f2937;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.section {
+  margin-top: 20px;
+  padding: 15px;
+  background: #eef2f7;
+  border-radius: 10px;
+}
+
+.warning {
+  margin-top: 20px;
+  padding: 12px;
+  background: #fff7ed;
+  border-left: 4px solid #f97316;
+  color: #7c2d12;
+}
+
+.note {
+  background: #eef2ff;
+  padding: 12px;
+  border-left: 4px solid #4f46e5;
+  border-radius: 8px;
+  color: #1e3a8a;
+  margin-bottom: 20px;
+}
+
+.dicom-preview {
+  max-width: 100%;
+  max-height: 650px;
+  display: block;
+}
