@@ -27,24 +27,38 @@ function App() {
     setLoadingPreview(true);
     setResult(null);
 
-    const formData = new FormData();
-    formData.append("file", file);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
 
-    const response = await fetch("http://127.0.0.1:8000/preview", {
-      method: "POST",
-      body: formData,
-    });
+      const response = await fetch(
+        "https://lung-nodule-backend.onrender.com/preview",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (data.status === "success") {
-      setPreview(data.preview_image);
-      setMetadata(data.dicom_metadata);
-    } else {
-      setResult(data);
+      if (data.status === "success") {
+        setPreview(data.preview_image);
+        setMetadata(data.dicom_metadata);
+      } else {
+        setResult(data);
+        alert(data.message || "Preview generation failed.");
+      }
+    } catch (error) {
+      console.error(error);
+
+      setResult({
+        status: "error",
+        message:
+          "Could not connect to cloud backend. Render free services may take 30-60 seconds to wake up.",
+      });
+    } finally {
+      setLoadingPreview(false);
     }
-
-    setLoadingPreview(false);
   };
 
   const handlePredictROI = async () => {
@@ -54,24 +68,39 @@ function App() {
     }
 
     setLoadingPrediction(true);
+    setResult(null);
 
-    const response = await fetch("http://127.0.0.1:8000/predict-roi", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        image_base64: preview,
-        x: Math.round(crop.x),
-        y: Math.round(crop.y),
-        width: Math.round(crop.width),
-        height: Math.round(crop.height),
-      }),
-    });
+    try {
+      const response = await fetch(
+        "https://lung-nodule-backend.onrender.com/predict-roi",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            image_base64: preview,
+            x: Math.round(crop.x),
+            y: Math.round(crop.y),
+            width: Math.round(crop.width),
+            height: Math.round(crop.height),
+          }),
+        }
+      );
 
-    const data = await response.json();
-    setResult(data);
-    setLoadingPrediction(false);
+      const data = await response.json();
+      setResult(data);
+    } catch (error) {
+      console.error(error);
+
+      setResult({
+        status: "error",
+        message:
+          "Could not connect to cloud AI backend. Render may still be waking up.",
+      });
+    } finally {
+      setLoadingPrediction(false);
+    }
   };
 
   return (
