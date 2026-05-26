@@ -215,7 +215,7 @@ function App() {
       <p className="subtitle">
         AI-assisted ROI segmentation.
         Upload a CT slice, select the suspected ROI,
-        and run U-Net segmentation.
+        run U-Net segmentation, and ICD-10-CM documentation support.
       </p>
 
       <p className="note">
