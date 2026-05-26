@@ -18,6 +18,7 @@ from model_utils import (
     suggest_icd,
 )
 
+
 def dicom_to_preview_base64(dicom_path):
     ds = pydicom.dcmread(dicom_path, force=True)
 
@@ -31,7 +32,9 @@ def dicom_to_preview_base64(dicom_path):
     upper = -600 + 1500 / 2
     windowed = np.clip(hu, lower, upper)
 
-    normalized = (windowed - windowed.min()) / (windowed.max() - windowed.min() + 1e-8)
+    normalized = (windowed - windowed.min()) / (
+        windowed.max() - windowed.min() + 1e-8
+    )
     img_uint8 = (normalized * 255).astype(np.uint8)
 
     pil_img = Image.fromarray(img_uint8)
@@ -52,6 +55,7 @@ def dicom_to_preview_base64(dicom_path):
 
     return encoded, metadata
 
+
 app = FastAPI(title="Lung Nodule ROI Segmentation API")
 
 app.add_middleware(
@@ -63,6 +67,8 @@ app.add_middleware(
 )
 
 MODEL_PATH = os.path.join("models", "best_lidc_unet.pth")
+SAMPLE_DICOM_DIR = "sample_dicoms"
+
 model, device = load_model(MODEL_PATH)
 
 
@@ -113,24 +119,88 @@ async def preview(file: UploadFile = File(...)):
             os.remove(temp_path)
 
 
+@app.get("/sample-dicoms")
+def list_sample_dicoms():
+    if not os.path.exists(SAMPLE_DICOM_DIR):
+        return {
+            "status": "error",
+            "message": "sample_dicoms folder not found.",
+            "samples": [],
+        }
+
+    files = [
+        f for f in os.listdir(SAMPLE_DICOM_DIR)
+        if f.lower().endswith(".dcm")
+    ]
+
+    return {
+        "status": "success",
+        "samples": sorted(files),
+    }
+
+
+@app.post("/preview-sample/{filename}")
+async def preview_sample(filename: str):
+    try:
+        sample_path = os.path.join(SAMPLE_DICOM_DIR, filename)
+
+        if not os.path.exists(sample_path):
+            return {
+                "status": "error",
+                "message": "Sample DICOM not found.",
+            }
+
+        image_base64, metadata = dicom_to_preview_base64(sample_path)
+
+        return {
+            "status": "success",
+            "message": "Sample DICOM preview generated.",
+            "filename": filename,
+            "dicom_metadata": metadata,
+            "preview_image": f"data:image/png;base64,{image_base64}",
+        }
+
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e),
+        }
+
+
 @app.post("/predict-roi")
 async def predict_roi(request: RoiRequest):
     try:
-        image_data = request.image_base64.split(",")[1]
-        image_bytes = base64.b64decode(image_data)
+        if "," in request.image_base64:
+            image_data = request.image_base64.split(",", 1)[1]
+        else:
+            image_data = request.image_base64
 
+        image_bytes = base64.b64decode(image_data)
         image = Image.open(io.BytesIO(image_bytes)).convert("L")
 
-        roi = image.crop((
-            request.x,
-            request.y,
-            request.x + request.width,
-            request.y + request.height
-        ))
+        img_width, img_height = image.size
 
+        if request.width <= 0 or request.height <= 0:
+            return {
+                "status": "error",
+                "message": "Invalid ROI crop. Width and height must be greater than 0.",
+            }
+
+        x1 = max(0, request.x)
+        y1 = max(0, request.y)
+        x2 = min(img_width, request.x + request.width)
+        y2 = min(img_height, request.y + request.height)
+
+        if x2 <= x1 or y2 <= y1:
+            return {
+                "status": "error",
+                "message": "Invalid ROI crop coordinates. Please select a valid ROI region.",
+            }
+
+        roi = image.crop((x1, y1, x2, y2))
         roi = roi.resize((64, 64))
-        roi_np = np.array(roi).astype(np.float32) / 255.0
 
+        roi_np = np.array(roi).astype(np.float32) / 255.0
         input_tensor = torch.tensor(roi_np).unsqueeze(0).unsqueeze(0)
 
         model_output = predict_mask(model, device, input_tensor)
@@ -147,13 +217,13 @@ async def predict_roi(request: RoiRequest):
                 "icd_10_suggestion": icd_output["icd_10_suggestion"],
                 "icd_description": icd_output["icd_description"],
                 "note": icd_output["note"],
-            }
+            },
         }
 
     except Exception as e:
         return {
             "status": "error",
-            "message": str(e)
+            "message": str(e),
         }
 
 
